@@ -1,0 +1,15 @@
+{
+  "require": {
+    "ext-json": "*",
+    "ext-pdo": "*",
+    "clancats/hydrahon": "^1.1",
+    "twilio/sdk": "^5.32",
+    "authy/php": "^3.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "ProjectRoot\\": "",
+      "NozCore\\": "library/"
+    }
+  }
+}

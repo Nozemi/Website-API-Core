@@ -1,0 +1,31 @@
+
+
+RewriteEngine Off
+RewriteEngine On
+
+RewriteRule ^([a-zA-Z0-9_-]+)$ index.php?endpoint=$1
+RewriteRule ^([a-zA-Z0-9_-]+)/$ index.php?endpoint=$1
+
+RewriteRule ^([\w_-]+)/([\w_-]+)$ index.php?endpoint=$1&id=$2
+RewriteRule ^([\w_-]+)/([\w_-]+)/$ index.php?endpoint=$1&id=$2
+
+RewriteRule ^([\w_-]+)/limit/([\d]+)$ index.php?endpoint=$1&limit=$2
+RewriteRule ^([\w_-]+)/limit/([\d]+)/$ index.php?endpoint=$1&limit=$2
+
+RewriteRule ^([\w_-]+)/limit/([\d]+)/page/([\d]+)$ index.php?endpoint=$1&limit=$2&page=$3
+RewriteRule ^([\w_-]+)/limit/([\d]+)/page/([\d]+)/$ index.php?endpoint=$1&limit=$2&page=$3
+
+RewriteRule ^([\w_-]+)/name/([a-zA-Z0-9_-]+)$ index.php?endpoint=$1&name=$2
+RewriteRule ^([\w_-]+)/name/([a-zA-Z0-9_-]+)/$ index.php?endpoint=$1&name=$2
+
+RewriteRule ^([\w_-]+)/category/([\w_-]+)$ index.php?endpoint=$1&category=$2
+RewriteRule ^([\w_-]+)/category/([\w_-]+)/$ index.php?endpoint=$1&category=$2
+
+RewriteRule ^([a-zA-Z0-9_-]+)$ $1.php
+RewriteRule ^([a-zA-Z0-9_-]+)/$ $1.php
+
+# Let's deny access to files that aren't supposed to be accessed.
+RewriteRule ^((endpoints|composer|config)\.json) - [F,L,NC]
+RewriteRule ^((README)\.md) - [F,L,NC]
+RewriteRule ^((composer)\.lock) - [F,L,NC]
+RewriteRule ^(\.gitignore) - [F,L,NC]
