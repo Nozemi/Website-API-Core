@@ -4,7 +4,8 @@
     "ext-pdo": "*",
     "clancats/hydrahon": "^1.1",
     "twilio/sdk": "^5.32",
-    "authy/php": "^3.0"
+    "authy/php": "^3.0",
+    "ext-apache": "*"
   },
   "autoload": {
     "psr-4": {

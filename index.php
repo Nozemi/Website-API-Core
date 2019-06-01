@@ -1,5 +1,6 @@
 <?php
 
+use NozCore\Authenticator;
 use NozCore\Endpoint;
 use NozCore\Message\Error;
 use NozCore\Validator;
@@ -96,6 +97,10 @@ function connectToDb($host, $name, $user, $pass, $port = 3306) {
 }
 
 connectToDb('localhost', 'rsps_dev', 'rsps', $config->database['password']);
+
+$auth = new Authenticator();
+$token = $auth->getBearerToken();
+$auth->authenticateToken($token);
 
 // We need to map each endpoint in here so we know which class to use.
 $endpointMap = json_decode(file_get_contents(__DIR__ . '/endpoints.json'), true);

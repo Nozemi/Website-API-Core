@@ -5,6 +5,8 @@ use NozCore\TwoFactorAuthentication;
 
 class TwoFactorRegister extends Endpoint {
 
+    protected $object = -1;
+
     public function post() {
         $key = $GLOBALS['config']->authyKey;
         $TwoFA = new TwoFactorAuthentication($key);

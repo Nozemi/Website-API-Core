@@ -2,10 +2,12 @@
 
 use NozCore\Authenticator;
 use NozCore\Endpoint;
-use NozCore\Objects\User;
+use NozCore\Objects\Users\User;
 use NozCore\TwoFactorAuthentication;
 
 class UserLogin extends Endpoint {
+
+    protected $object = -1;
 
     public function post() {
         $username = $password = $token = false;

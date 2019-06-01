@@ -3,8 +3,6 @@
 use ClanCats\Hydrahon\Builder;
 use ClanCats\Hydrahon\Query\Sql\Table;
 use JsonSerializable;
-use NozCore\Message\Error;
-use NozCore\Objects\File\File;
 
 abstract class ObjectBase implements JsonSerializable {
 
@@ -19,6 +17,8 @@ abstract class ObjectBase implements JsonSerializable {
     /** @var Table $dbTable */
     protected $dbTable = null;
 
+    protected $permissions = [];
+
     /**
      * Define the table structure in an array with key being column name and value being data type.
      *
@@ -26,6 +26,10 @@ abstract class ObjectBase implements JsonSerializable {
      */
     abstract public function data();
 
+    /**
+     * ObjectBase constructor.
+     * @param array $data
+     */
     public function __construct($data = []) {
         $this->db  = $GLOBALS['hydra'];
         $this->pdo = $GLOBALS['pdo'];
@@ -43,19 +47,17 @@ abstract class ObjectBase implements JsonSerializable {
      * Custom serializer for objects.
      *
      * @return array
-     * @throws \ReflectionException
      * @throws \ClanCats\Hydrahon\Query\Sql\Exception
      */
     public function jsonSerialize() {
-        $reflect = new \ReflectionClass($this);
-        $className = strtolower($reflect->getShortName());
-
-        $permissions = new Permissions();
+        $this->permissions();
 
         $dataToSerialize = [];
         foreach($this->data() as $property => $type) {
-            if(isset($this->$property) && $permissions->checkPermissions($className . '.' . $property)) {
-                $dataToSerialize[$property] = $this->$property;
+            if($this->getPermission($property)) {
+                if (isset($this->$property)) {
+                    $dataToSerialize[$property] = $this->$property;
+                }
             }
         }
 
@@ -157,7 +159,7 @@ abstract class ObjectBase implements JsonSerializable {
             }
         }
 
-        if($this->getProperty('id') && !$this instanceof File) {
+        if($this->getProperty('id')/* && !$this instanceof File*/) {
             // Update object
             $this->dbTable->update($dataToSerialize)
                 ->where('id', $this->getProperty('id'))
@@ -165,7 +167,7 @@ abstract class ObjectBase implements JsonSerializable {
             $objectId = $this->getProperty('id');
         } else {
             // Create project
-            $result = $this->dbTable->insert($dataToSerialize)->execute();
+            $this->dbTable->insert($dataToSerialize)->execute();
 
             $objectId = $this->pdo->lastInsertId();
         }
@@ -230,5 +232,39 @@ abstract class ObjectBase implements JsonSerializable {
                 }
             }
         }
+    }
+
+
+    /**
+     * @throws \ClanCats\Hydrahon\Query\Sql\Exception
+     */
+    public function permissions() {
+        /** @var Table $table */
+        $table = $this->db->table('permissions');
+
+        $groups = [0];
+        if(isset($_SESSION['user'])) {
+            $groupId = $_SESSION['user']['groupId'];
+            $groups[] = $groupId;
+
+            // TODO: Add a function to get inheritance from the player group
+        }
+
+        $result = $table->select()
+            ->where('groupId', 'in', $groups)
+            ->andWhere('table', $this->table)
+            ->execute();
+
+        foreach($result as $item) {
+            $this->permissions[$item['key']] = boolval($item['value']);
+        }
+    }
+
+    public function getPermission($key) {
+        if(isset($this->permissions[$key])) {
+            return $this->permissions[$key];
+        }
+
+        return false;
     }
 }

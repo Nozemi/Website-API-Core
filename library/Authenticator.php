@@ -2,7 +2,7 @@
 
 use ClanCats\Hydrahon\Builder;
 use ClanCats\Hydrahon\Query\Sql\Table;
-use NozCore\Objects\User;
+use NozCore\Objects\Users\User;
 
 class Authenticator {
 
@@ -95,8 +95,15 @@ class Authenticator {
         //}
     }
 
+    /**
+     * @param $token
+     * @return bool|mixed|null
+     * @throws \ClanCats\Hydrahon\Query\Sql\Exception
+     * @throws \ReflectionException
+     */
     public function authenticateToken($token) {
         $query = $this->dbTable->select()->where('token', $token)->execute();
+
         if(!empty($query)) {
             $userId = $query[0]['userId'];
             $user = new User();
@@ -108,7 +115,7 @@ class Authenticator {
                 'token' => $token
             ];
 
-            return true;
+            return $user->getProperty('id');
         }
 
         return false;

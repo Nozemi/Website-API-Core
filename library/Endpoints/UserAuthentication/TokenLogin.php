@@ -2,9 +2,11 @@
 
 use NozCore\Authenticator;
 use NozCore\Endpoint;
-use NozCore\Objects\User;
+use NozCore\Objects\Users\User;
 
 class TokenLogin extends Endpoint {
+
+    protected $object = -1;
 
     /**
      * @throws \ClanCats\Hydrahon\Query\Sql\Exception
@@ -19,20 +21,24 @@ class TokenLogin extends Endpoint {
 
         if($token) {
             $auth = new Authenticator();
-            if($auth->authenticateToken($token)) {
+            $id = $auth->authenticateToken($token);
+
+            if(!$id) {
+                $this->responseCode = 401;
+                $this->result = ['nope'];
+                return;
+            } else {
                 $this->responseCode = 200;
                 $user = new User();
+                $user = $user->get($id);
 
-                if(isset($_SESSION['user']['id'])) {
-                    $user = $user->get($_SESSION['user']['id']);
-
-                    $this->result = [
-                        'id' => $_SESSION['user']['id'],
-                        'groupId' => $_SESSION['user']['groupId'],
-                        'username' => $user->getProperty('username')
-                    ];
-                    return;
-                }
+                $this->result = [
+                    'id' => $user->getProperty('id'),
+                    'groupId' => $user->getProperty('groupId'),
+                    'username' => $user->getProperty('username'),
+                    'accessToken' => $token
+                ];
+                return;
             }
         }
 

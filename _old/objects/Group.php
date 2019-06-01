@@ -5,7 +5,7 @@ use NozCore\ObjectBase;
 
 class Group extends ObjectBase {
 
-    protected $table = 'user_groups';
+    protected $table = 'group';
 
     /**
      * Define the table structure in an array with key being column name and value being data type.

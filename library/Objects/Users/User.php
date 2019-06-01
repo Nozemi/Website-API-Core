@@ -1,4 +1,4 @@
-<?php namespace NozCore\Objects;
+<?php namespace NozCore\Objects\Users;
 
 use ClanCats\Hydrahon\Builder;
 use NozCore\DataTypes;
@@ -41,7 +41,10 @@ class User extends ObjectBase {
             'email'        => DataTypes::STRING,
             'groupId'      => DataTypes::INTEGER,
             'twoFAEnabled' => DataTypes::BOOLEAN,
-            'authyId'      => DataTypes::INTEGER
+            'authyId'      => DataTypes::INTEGER,
+            'registered'   => DataTypes::TIMESTAMP,
+            'lastVisit'    => DataTypes::TIMESTAMP,
+            'discordId'    => DataTypes::STRING
         ];
     }
 
@@ -77,6 +80,12 @@ class User extends ObjectBase {
         }
     }
 
+    /**
+     * @param bool $username
+     * @return User|null
+     * @throws \ClanCats\Hydrahon\Query\Sql\Exception
+     * @throws \ReflectionException
+     */
     public function getUserByName($username = false) {
         if(isset($this->username) && !$username) {
             $username = $this->username;
@@ -93,6 +102,13 @@ class User extends ObjectBase {
         return null;
     }
 
+    /**
+     * @param $username
+     * @param $password
+     * @return bool|User|null
+     * @throws \ClanCats\Hydrahon\Query\Sql\Exception
+     * @throws \ReflectionException
+     */
     public function login($username, $password) {
         if(isset($this->username)) {
             $user = $this->getUserByName($username);

@@ -1,6 +1,8 @@
 {
     "login": "NozCore\\Endpoints\\UserAuthentication\\UserLogin",
     "login-token": "NozCore\\Endpoints\\UserAuthentication\\TokenLogin",
-    "user": "NozCore\\Endpoints\\User",
-    "users": "NozCore\\Endpoints\\User"
+    "user": "NozCore\\Endpoints\\Users",
+    "users": "NozCore\\Endpoints\\Users",
+    "group": "NozCore\\Endpoints\\Groups",
+    "groups": "NozCore\\Endpoints\\Groups"
 }
