@@ -18,17 +18,17 @@ abstract class Endpoint {
         $name = (isset($_REQUEST['name']) ? $_REQUEST['name'] : false);
         $id   = (isset($_REQUEST['id']) ? $_REQUEST['id'] : false);
 
-        /** @var ObjectBase $group */
-        $group = new $this->object();
+        /** @var ObjectBase $object */
+        $object = new $this->object();
         if($name) {
-            $this->result = $group->getByName($name, $this->getByNameColumn);
+            $this->result = $object->getByName($name, $this->getByNameColumn);
         } else if($id) {
-            $this->result = $group->get($id);
+            $this->result = $object->get($id);
         } else {
             $limit = isset($_REQUEST['limit']) ? intval($_REQUEST['limit']) : 100;
             $page = isset($_REQUEST['page']) ? ((intval($_REQUEST['page']) - 1) * $limit) : 0;
 
-            $this->result = $group->getAll($limit, $page);
+            $this->result = $object->getAll($limit, $page);
         }
     }
 
@@ -36,8 +36,20 @@ abstract class Endpoint {
         new Info('Endpoint not yet handling PUT requests.');
     }
 
+    /**
+     * @throws \ClanCats\Hydrahon\Query\Sql\Exception
+     * @throws \ReflectionException
+     */
     public function post() {
-        new Info('Endpoint not yet handling POST requests.');
+        if(isset($GLOBALS['data']['id'])) {
+            unset($GLOBALS['data']['id']);
+        }
+
+        /** @var ObjectBase $object */
+        $object = new $this->object($GLOBALS['data']);
+        $object = $object->save();
+
+        $this->result = $object;
     }
 
     public function delete() {

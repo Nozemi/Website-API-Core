@@ -3,6 +3,7 @@
 use ClanCats\Hydrahon\Builder;
 use ClanCats\Hydrahon\Query\Sql\Table;
 use JsonSerializable;
+use NozCore\Message\Error;
 
 abstract class ObjectBase implements JsonSerializable {
 
@@ -140,36 +141,44 @@ abstract class ObjectBase implements JsonSerializable {
     }
 
     /**
+     * @param string $method
      * @return ObjectBase
      * @throws \ClanCats\Hydrahon\Query\Sql\Exception
      * @throws \ReflectionException
      */
-    public function save() {
+    public function save($method = 'POST') {
         $this->callHooks('BEFORE_SAVE_EVENT');
 
-        $reflect = new \ReflectionClass($this);
-        $className = strtolower($reflect->getShortName());
+        if($this->getProperty('id')) {
+            $this->callHooks('BEFORE_SAVE_WITH_ID_EVENT');
+        } else {
+            $this->callHooks('BEFORE_SAVE_WITHOUT_ID_EVENT');
+        }
 
-        $permissions = new Permissions();
+        $this->permissions($method);
 
         $dataToSerialize = [];
         foreach($this->data() as $property => $type) {
-            if(isset($this->$property) && $permissions->checkPermissions($className . '.' . $property)) {
+            if(isset($this->$property) && $this->getPermission($property)) {
                 $dataToSerialize[$property] = $this->$property;
             }
         }
 
         if($this->getProperty('id')/* && !$this instanceof File*/) {
             // Update object
+            $this->callHooks('BEFORE_SAVE_EXISTING_EVENT');
             $this->dbTable->update($dataToSerialize)
                 ->where('id', $this->getProperty('id'))
                 ->execute();
             $objectId = $this->getProperty('id');
+            $this->callHooks('AFTER_SAVE_EXISTING_EVENT');
         } else {
-            // Create project
+            // Create object
+            $this->callHooks('BEFORE_SAVE_NEW_EVENT');
             $this->dbTable->insert($dataToSerialize)->execute();
 
             $objectId = $this->pdo->lastInsertId();
+            $this->callHooks('AFTER_SAVE_NEW_EVENT', $this->get($objectId));
         }
 
         return $this->get($objectId);
@@ -234,29 +243,36 @@ abstract class ObjectBase implements JsonSerializable {
         }
     }
 
-
     /**
+     * @param string $method
      * @throws \ClanCats\Hydrahon\Query\Sql\Exception
      */
-    public function permissions() {
-        /** @var Table $table */
-        $table = $this->db->table('permissions');
+    public function permissions($method = 'GET') {
+        if($method == 'SERVER') {
+            foreach($this->data() as $property => $type) {
+                $this->permissions[$property] = true;
+            }
+        } else {
+            /** @var Table $table */
+            $table = $this->db->table('permissions');
 
-        $groups = [0];
-        if(isset($_SESSION['user'])) {
-            $groupId = $_SESSION['user']['groupId'];
-            $groups[] = $groupId;
+            $groups = [0];
+            if(isset($_SESSION['user'])) {
+                $groupId = $_SESSION['user']['groupId'];
+                $groups[] = $groupId;
 
-            // TODO: Add a function to get inheritance from the player group
-        }
+                // TODO: Add a function to get inheritance from the player group
+            }
 
-        $result = $table->select()
-            ->where('groupId', 'in', $groups)
-            ->andWhere('table', $this->table)
-            ->execute();
+            $result = $table->select()
+                ->where('groupId', 'in', $groups)
+                ->andWhere('table', $this->table)
+                ->andWhere('method', $method)
+                ->execute();
 
-        foreach($result as $item) {
-            $this->permissions[$item['key']] = boolval($item['value']);
+            foreach($result as $item) {
+                $this->permissions[$item['key']] = boolval($item['value']);
+            }
         }
     }
 

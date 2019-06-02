@@ -18,6 +18,9 @@ RewriteRule ^([\w_-]+)/limit/([\d]+)/page/([\d]+)/$ index.php?endpoint=$1&limit=
 RewriteRule ^([\w_-]+)/name/([a-zA-Z0-9_-]+)$ index.php?endpoint=$1&name=$2
 RewriteRule ^([\w_-]+)/name/([a-zA-Z0-9_-]+)/$ index.php?endpoint=$1&name=$2
 
+RewriteRule ^user/([\d]+)/verify/([a-zA-Z0-9_-]+)$ index.php?endpoint=users&id=$1&emailToken=$2
+RewriteRule ^user/([\d]+)/verify/([a-zA-Z0-9_-]+)/$ index.php?endpoint=users&id=$1&emailToken=$2
+
 RewriteRule ^([\w_-]+)/category/([\w_-]+)$ index.php?endpoint=$1&category=$2
 RewriteRule ^([\w_-]+)/category/([\w_-]+)/$ index.php?endpoint=$1&category=$2
 

@@ -12,11 +12,12 @@ class Error extends MessageUtil {
             $backtrace = end($backtrace);
         }
 
-        return [
+        /*return [
             'backtrace' => [
                 'file' => $backtrace['file'],
                 'line' => $backtrace['line']
             ]
-        ];
+        ];*/
+        return [];
     }
 }
