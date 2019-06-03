@@ -171,12 +171,12 @@ class User extends ObjectBase {
     public function sendVerificationEmail(User $user) {
         if(strlen($user->email) > 0 && strlen($user->emailToken) > 0) {
             $mailFactory = new MailFactory();
-            $mailFactory->setSubject('Dodian - Please verify your email address')
+            $mailFactory->setSubject('Eldrios - Please verify your email address')
                 ->setHtmlBody('This is the verification token: <a href="#">' . $user->emailToken . '</a>')
                 ->setTextBody('Viewing this means that your email client doesn\'t support HTML emails.
                 Which means you\'ll have to manually enter this code: ' . $user->emailToken)
-                ->setFromEmail('no-reply@dodian.net')
-                ->setFromName('Dodian')
+                ->setFromEmail('no-reply@eldrios.com')
+                ->setFromName('Eldrios')
                 ->send($user->email);
         } else {
             new Error('Failed to send verification email.');

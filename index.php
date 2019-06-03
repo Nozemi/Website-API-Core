@@ -15,8 +15,8 @@ $config = [
     'allowedOrigins' => [
         'http://localhost',
         'https://localhost',
-        'http://dodian.net',
-        'https://dodian.net'
+        'http://eldrios.com',
+        'https://eldrios.com'
     ],
     'fileRoot' => '::SITEROOT::/files/',
     'authyKey' => false,
