@@ -1,7 +1,9 @@
 <?php namespace NozCore;
 
+use Mailgun\Exception\HttpClientException;
 use Mailgun\HttpClientConfigurator;
 use Mailgun\Mailgun;
+use NozCore\Message\Error;
 
 class MailFactory {
 
@@ -19,7 +21,7 @@ class MailFactory {
         $this->htmlBody  = $htmlBody;
     }
 
-    public function send($to = false) {
+    public function send($to = false): bool {
         if($to && $this->subject && ($this->textBody || $this->htmlBody) && $this->fromEmail) {
             $config = new HttpClientConfigurator();
             $config->setApiKey($GLOBALS['config']->mg['key']);
@@ -44,8 +46,12 @@ class MailFactory {
                 $values['text'] = $this->textBody;
             }
 
-            $mg = Mailgun::configure($config);
-            $mg->messages()->send($GLOBALS['config']->mg['domain'], $values);
+            try {
+                $mg = Mailgun::configure($config);
+                $mg->messages()->send($GLOBALS['config']->mg['domain'], $values);
+            } catch(HttpClientException $ex) {
+                new Error('Possibly invalid email address. However, your account is still registered, but you didn\'t get a verification email. Contact staff to have this resolved, or create a new account.');
+            }
         } else {
             return false;
         }

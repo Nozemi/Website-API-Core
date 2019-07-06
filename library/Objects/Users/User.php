@@ -1,6 +1,7 @@
 <?php namespace NozCore\Objects\Users;
 
 use ClanCats\Hydrahon\Builder;
+use Http\Discovery\Exception\DiscoveryFailedException;
 use Mailgun\HttpClientConfigurator;
 use Mailgun\Mailgun;
 use NozCore\DataTypes;
@@ -22,7 +23,7 @@ use NozCore\ObjectBase;
  */
 class User extends ObjectBase {
 
-    protected $table = 'user';
+    protected $table = 'api_user';
 
     protected $hooks = [
         'BEFORE_SAVE_EVENT' => [
@@ -170,14 +171,18 @@ class User extends ObjectBase {
      */
     public function sendVerificationEmail(User $user) {
         if(strlen($user->email) > 0 && strlen($user->emailToken) > 0) {
-            $mailFactory = new MailFactory();
-            $mailFactory->setSubject('Eldrios - Please verify your email address')
-                ->setHtmlBody('This is the verification token: <a href="#">' . $user->emailToken . '</a>')
-                ->setTextBody('Viewing this means that your email client doesn\'t support HTML emails.
+            try {
+                $mailFactory = new MailFactory();
+                $mailFactory->setSubject('Eldrios - Please verify your email address')
+                    ->setHtmlBody('This is the verification token: <a href="https://web.api.eldrios.com/user/' . $user->id . '/verify/' . $user->emailToken . '">' . $user->emailToken . '</a>')
+                    ->setTextBody('Viewing this means that your email client doesn\'t support HTML emails.
                 Which means you\'ll have to manually enter this code: ' . $user->emailToken)
-                ->setFromEmail('no-reply@eldrios.com')
-                ->setFromName('Eldrios')
-                ->send($user->email);
+                    ->setFromEmail('no-reply@eldrios.com')
+                    ->setFromName('Eldrios')
+                    ->send($user->email);
+            } catch(\Exception $ex) {
+                new Error($ex->getMessage());
+            }
         } else {
             new Error('Failed to send verification email.');
         }

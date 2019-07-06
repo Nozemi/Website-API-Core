@@ -1,8 +1,19 @@
 {
     "login": "NozCore\\Endpoints\\UserAuthentication\\UserLogin",
     "login-token": "NozCore\\Endpoints\\UserAuthentication\\TokenLogin",
+    "discord-registration": "NozCore\\Endpoints\\Discord\\DiscordRegistration",
     "user": "NozCore\\Endpoints\\Users",
     "users": "NozCore\\Endpoints\\Users",
     "group": "NozCore\\Endpoints\\Groups",
-    "groups": "NozCore\\Endpoints\\Groups"
+    "groups": "NozCore\\Endpoints\\Groups",
+    "item": "NozCore\\Endpoints\\Game\\Items",
+    "items": "NozCore\\Endpoints\\Game\\Items",
+    "npc": "NozCore\\Endpoints\\Game\\NPCs",
+    "npcs": "NozCore\\Endpoints\\Game\\NPCs",
+    "active-user": "NozCore\\Endpoints\\ActiveUsers",
+    "active-users": "NozCore\\Endpoints\\ActiveUsers",
+    "page": "NozCore\\Endpoints\\Site\\Pages",
+    "pages": "NozCore\\Endpoints\\Site\\Pages",
+    "article": "NozCore\\Endpoints\\Site\\Articles",
+    "articles": "NozCore\\Endpoints\\Site\\Articles"
 }

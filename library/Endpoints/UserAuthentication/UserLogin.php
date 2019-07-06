@@ -37,8 +37,11 @@ class UserLogin extends Endpoint {
 
                 if($user->getProperty('twoFAEnabled')) {
                     $authy = new TwoFactorAuthentication($GLOBALS['config']->authyKey);
-                    if(!$authy->verifyToken(intval($user->authyId), intval($token))) {
+                    if(!$token || (intval($token) >= 0) || !$authy->verifyToken(intval($user->authyId), intval($token))) {
                         $this->responseCode = 401;
+                        $this->result = [
+                            'message' => 'Failed to verify two factor token. Please get a valid token from the Authy app.'
+                        ];
                         return;
                     }
                 }
@@ -56,5 +59,8 @@ class UserLogin extends Endpoint {
         }
 
         $this->responseCode = 401;
+        $this->result = [
+            'message' => 'Incorrect username or password'
+        ];
     }
 }

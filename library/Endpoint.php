@@ -1,10 +1,10 @@
 <?php namespace NozCore;
 
-use NozCore\Message\Info;
+use NozCore\Message\Error;
 
 abstract class Endpoint {
 
-    protected $object = null;
+    protected $object = -1;
     protected $getByNameColumn = 'name';
 
     protected $result = [];
@@ -15,25 +15,49 @@ abstract class Endpoint {
      * @throws \ReflectionException
      */
     public function get() {
+        new ActivityManager($this);
+
         $name = (isset($_REQUEST['name']) ? $_REQUEST['name'] : false);
         $id   = (isset($_REQUEST['id']) ? $_REQUEST['id'] : false);
 
-        /** @var ObjectBase $object */
-        $object = new $this->object();
-        if($name) {
-            $this->result = $object->getByName($name, $this->getByNameColumn);
-        } else if($id) {
-            $this->result = $object->get($id);
-        } else {
-            $limit = isset($_REQUEST['limit']) ? intval($_REQUEST['limit']) : 100;
-            $page = isset($_REQUEST['page']) ? ((intval($_REQUEST['page']) - 1) * $limit) : 0;
+        if($this->object != -1) {
+            /** @var ObjectBase $object */
+            $object = new $this->object();
+            $object->setQueryLimit(isset($_REQUEST['limit']) ? intval($_REQUEST['limit']) : 25);
+            $object->setQueryPage(isset($_REQUEST['page']) ? ((intval($_REQUEST['page']) - 1) * $object->getQueryLimit()) : 0);
 
-            $this->result = $object->getAll($limit, $page);
+            if($id) {
+                $this->result = $object->get($id);
+                return;
+            }
+
+            if(isset($_REQUEST['since']) || isset($_REQUEST['until'])) {
+                $since = (isset($_REQUEST['since'])) ? $_REQUEST['since'] : null;
+                $until = (isset($_REQUEST['until'])) ? $_REQUEST['until'] : date('Y-m-d H:i:s');
+                $this->result = $object->getBetween($since, $until);
+                return;
+            }
+
+            $filters = [];
+            foreach($object->data() as $filter => $dataType) {
+                if(isset($_REQUEST[$filter])) {
+                    $filters[$filter] = $_REQUEST[$filter];
+                }
+            }
+
+            if((empty($filters) || (isset($filters['name']) && count($filters) == 1)) && $name) {
+                $this->result = $object->getByName($name, $this->getByNameColumn);
+                return;
+            }
+
+            $this->result = $object->getByFilters($filters);
+        } else {
+            new Error('Endpoint not yet handling GET requests.');
         }
     }
 
     public function put() {
-        new Info('Endpoint not yet handling PUT requests.');
+        new Error('Endpoint not yet handling PUT requests.');
     }
 
     /**
@@ -41,19 +65,23 @@ abstract class Endpoint {
      * @throws \ReflectionException
      */
     public function post() {
-        if(isset($GLOBALS['data']['id'])) {
-            unset($GLOBALS['data']['id']);
+        if($this->object != -1) {
+            if (isset($GLOBALS['data']['id'])) {
+                unset($GLOBALS['data']['id']);
+            }
+
+            /** @var ObjectBase $object */
+            $object = new $this->object($GLOBALS['data']);
+            $object = $object->save();
+
+            $this->result = $object;
+        } else {
+            new Error('Endpoint not yet handling POST requests.');
         }
-
-        /** @var ObjectBase $object */
-        $object = new $this->object($GLOBALS['data']);
-        $object = $object->save();
-
-        $this->result = $object;
     }
 
     public function delete() {
-        new Info('Endpoint not yet handling DELETE requests.');
+        new Error('Endpoint not yet handling DELETE requests.');
     }
 
     /**

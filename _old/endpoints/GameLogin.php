@@ -15,7 +15,7 @@ class GameLogin extends Endpoint {
         $db  = $GLOBALS['hydra'];
 
         /** @var Table $table */
-        $table = $db->table('user');
+        $table = $db->table('api_user');
 
         $result = $table->select(['username', 'password', 'salt', 'userid', 'enabledTwoFA', 'email', 'twoFAAccountId'])
             ->where('username', $GLOBALS['data']['username'])

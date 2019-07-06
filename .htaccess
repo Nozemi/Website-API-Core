@@ -3,29 +3,37 @@
 RewriteEngine Off
 RewriteEngine On
 
-RewriteRule ^([a-zA-Z0-9_-]+)$ index.php?endpoint=$1
-RewriteRule ^([a-zA-Z0-9_-]+)/$ index.php?endpoint=$1
+RewriteRule ^([a-zA-Z0-9_-]+)$ index.php?endpoint=$1 [QSA]
+RewriteRule ^([a-zA-Z0-9_-]+)/$ index.php?endpoint=$1 [QSA]
 
-RewriteRule ^([\w_-]+)/([\w_-]+)$ index.php?endpoint=$1&id=$2
-RewriteRule ^([\w_-]+)/([\w_-]+)/$ index.php?endpoint=$1&id=$2
+RewriteRule ^([\w_-]+)/([\w_-]+)$ index.php?endpoint=$1&id=$2 [QSA]
+RewriteRule ^([\w_-]+)/([\w_-]+)/$ index.php?endpoint=$1&id=$2 [QSA]
 
-RewriteRule ^([\w_-]+)/limit/([\d]+)$ index.php?endpoint=$1&limit=$2
-RewriteRule ^([\w_-]+)/limit/([\d]+)/$ index.php?endpoint=$1&limit=$2
+RewriteRule ^([\w_-]+)/limit/([\d]+)$ index.php?endpoint=$1&limit=$2 [QSA]
+RewriteRule ^([\w_-]+)/limit/([\d]+)/$ index.php?endpoint=$1&limit=$2 [QSA]
 
-RewriteRule ^([\w_-]+)/limit/([\d]+)/page/([\d]+)$ index.php?endpoint=$1&limit=$2&page=$3
-RewriteRule ^([\w_-]+)/limit/([\d]+)/page/([\d]+)/$ index.php?endpoint=$1&limit=$2&page=$3
+RewriteRule ^([\w_-]+)/limit/([\d]+)/page/([\d]+)$ index.php?endpoint=$1&limit=$2&page=$3 [QSA]
+RewriteRule ^([\w_-]+)/limit/([\d]+)/page/([\d]+)/$ index.php?endpoint=$1&limit=$2&page=$3 [QSA]
+RewriteRule ^([\w_-]+)/page/([\d]+)/limit/([\d]+)$ index.php?endpoint=$1&page=$2&limit=$3 [QSA]
+RewriteRule ^([\w_-]+)/page/([\d]+)/limit/([\d]+)/$ index.php?endpoint=$1&page=$2&limit=$3 [QSA]
 
-RewriteRule ^([\w_-]+)/name/([a-zA-Z0-9_-]+)$ index.php?endpoint=$1&name=$2
-RewriteRule ^([\w_-]+)/name/([a-zA-Z0-9_-]+)/$ index.php?endpoint=$1&name=$2
+RewriteRule ^([\w_-]+)/name/([\sa-zA-Z0-9_-]+)$ index.php?endpoint=$1&name=$2 [QSA]
+RewriteRule ^([\w_-]+)/name/([\sa-zA-Z0-9_-]+)/$ index.php?endpoint=$1&name=$2 [QSA]
 
-RewriteRule ^user/([\d]+)/verify/([a-zA-Z0-9_-]+)$ index.php?endpoint=users&id=$1&emailToken=$2
-RewriteRule ^user/([\d]+)/verify/([a-zA-Z0-9_-]+)/$ index.php?endpoint=users&id=$1&emailToken=$2
+RewriteRule ^user/([\d]+)/verify/([a-zA-Z0-9_-]+)$ index.php?endpoint=users&id=$1&emailToken=$2 [QSA]
+RewriteRule ^user/([\d]+)/verify/([a-zA-Z0-9_-]+)/$ index.php?endpoint=users&id=$1&emailToken=$2 [QSA]
 
-RewriteRule ^([\w_-]+)/category/([\w_-]+)$ index.php?endpoint=$1&category=$2
-RewriteRule ^([\w_-]+)/category/([\w_-]+)/$ index.php?endpoint=$1&category=$2
+RewriteRule ^([\w_-]+)/category/([\w_-]+)$ index.php?endpoint=$1&category=$2 [QSA]
+RewriteRule ^([\w_-]+)/category/([\w_-]+)/$ index.php?endpoint=$1&category=$2 [QSA]
 
-RewriteRule ^([a-zA-Z0-9_-]+)$ $1.php
-RewriteRule ^([a-zA-Z0-9_-]+)/$ $1.php
+RewriteRule ^([\w_-]+)/since/([\s\w:_-]+)$ index.php?endpoint=$1&since=$2 [QSA]
+RewriteRule ^([\w_-]+)/since/([\s\w:_-]+)/$ index.php?endpoint=$1&since=$2 [QSA]
+
+RewriteRule ^([\w_-]+)/between/([\s\w:_-]+)/([\s\w:_-]+)$ index.php?endpoint=$1&since=$2&until=$3 [QSA]
+RewriteRule ^([\w_-]+)/between/([\s\w:_-]+)/([\s\w:_-]+)/$ index.php?endpoint=$1&since=$2&until=$3 [QSA]
+
+RewriteRule ^([a-zA-Z0-9_-]+)$ $1.php [QSA]
+RewriteRule ^([a-zA-Z0-9_-]+)/$ $1.php [QSA]
 
 # Let's deny access to files that aren't supposed to be accessed.
 RewriteRule ^((endpoints|composer|config)\.json) - [F,L,NC]

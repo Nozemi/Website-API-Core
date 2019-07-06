@@ -29,7 +29,7 @@ class TwoFactorVerification extends Endpoint {
         //connectToDb('192.168.1.4', 'dodiannet', 'old_exorth', 'Logan11122!!');
         $db = $GLOBALS['hydra'];
         /** @var Table $table */
-        $table = $db->table('user');
+        $table = $db->table('api_user');
         $result = $table->select(['twoFAAccountId'])
             ->where('userid', $userId)
             ->one();

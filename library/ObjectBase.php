@@ -1,9 +1,9 @@
 <?php namespace NozCore;
 
 use ClanCats\Hydrahon\Builder;
+use ClanCats\Hydrahon\Query\Sql\Select;
 use ClanCats\Hydrahon\Query\Sql\Table;
 use JsonSerializable;
-use NozCore\Message\Error;
 
 abstract class ObjectBase implements JsonSerializable {
 
@@ -13,12 +13,20 @@ abstract class ObjectBase implements JsonSerializable {
     protected $pdo = null;
 
     protected $table = '';
+    protected $defaultSort = 'id';
+    protected $defaultSortOrder = 'asc';
+
     protected $hooks = [];
 
     /** @var Table $dbTable */
     protected $dbTable = null;
 
     protected $permissions = [];
+
+    protected $queryLimit = 25;
+    protected $queryPage = 1;
+
+    protected $betweenColumn = null;
 
     /**
      * Define the table structure in an array with key being column name and value being data type.
@@ -78,6 +86,7 @@ abstract class ObjectBase implements JsonSerializable {
 
         /** @var Table $table */
         $query = $this->dbTable->select()
+            ->orderBy([$this->defaultSort], $this->defaultSortOrder)
             ->limit($limit)
             ->offset($offset)
             ->execute();
@@ -104,8 +113,16 @@ abstract class ObjectBase implements JsonSerializable {
         $this->callHooks('BEFORE_GET_EVENT');
         $this->callHooks('BEFORE_GET_BY_NAME_EVENT');
 
+        /*print_r(json_encode([
+            'limit' => $this->queryLimit,
+            'page'  => $this->queryPage
+        ])); exit;*/
+
         $query = $this->dbTable->select()
+            ->orderBy([$this->defaultSort], $this->defaultSortOrder)
             ->where($column, 'LIKE', '%'.$name.'%')
+            ->limit($this->queryLimit)
+            ->page($this->queryPage)
             ->execute();
 
         foreach($query as $row) {
@@ -113,6 +130,86 @@ abstract class ObjectBase implements JsonSerializable {
             $this->callHooks('SUCCESSFUL_GET_EVENT', $object);
             $this->callHooks('SUCCESSFUL_GET_BY_NAME_EVENT', $object);
             $objects[] = $object;
+        }
+
+        return $objects;
+    }
+
+    /**
+     * @param array $filters
+     * @return array
+     * @throws \ReflectionException
+     * @throws \ClanCats\Hydrahon\Query\Sql\Exception
+     */
+    public function getByFilters(array $filters) {
+        $objects = [];
+
+        $this->callHooks('BEFORE_GET_EVENT');
+        $this->callHooks('BEFORE_GET_BY_FILTERS_EVENT');
+
+        $query = $this->dbTable->select()
+            ->orderBy([$this->defaultSort], $this->defaultSortOrder);
+
+        foreach($filters as $filter => $value) {
+            $query->where($filter, 'like', '%'.$value.'%');
+        }
+
+        $query = $query
+            ->limit($this->queryLimit)
+            ->page($this->queryPage)
+            ->execute();
+
+        foreach($query as $row) {
+            $object = new $this($row);
+            $this->callHooks('SUCCESSFUL_GET_EVENT', $object);
+            $this->callHooks('SUCCESSFUL_GET_BY_FILTERS_EVENT', $object);
+            $objects[] = $object;
+        }
+
+        return $objects;
+    }
+
+    /**
+     * @param $since
+     * @param $until
+     * @return array
+     * @throws \ClanCats\Hydrahon\Query\Sql\Exception
+     * @throws \ReflectionException
+     */
+    public function getBetween($since, $until) {
+        $since = date('Y-m-d H:i:s', strtotime($since));
+        $until = date('Y-m-d H:i:s', strtotime($until));
+
+        $objects = [];
+
+        $this->callHooks('BEFORE_GET_EVENT');
+        $this->callHooks('BEFORE_GET_BETWEEN_EVENT');
+
+        $query = $this->dbTable->select()
+            ->orderBy([$this->defaultSort], $this->defaultSortOrder);
+
+        if($this->betweenColumn != null) {
+            $column = $this->betweenColumn;
+            $query->where(function ($q) use ($since, $until, $column) {
+                /** @var Select $q */
+                if ($until != null) {
+                    $q->where($column, '<=', $until);
+                }
+
+                $q->where($column, '>=', $since);
+            });
+
+            $query = $query
+                ->limit($this->queryLimit)
+                ->page($this->queryPage)
+                ->execute();
+
+            foreach ($query as $row) {
+                $object = new $this($row);
+                $this->callHooks('SUCCESSFUL_GET_EVENT', $object);
+                $this->callHooks('SUCCESSFUL_GET_BETWEEN_EVENT', $object);
+                $objects[] = $object;
+            }
         }
 
         return $objects;
@@ -128,6 +225,7 @@ abstract class ObjectBase implements JsonSerializable {
         $this->callHooks('BEFORE_GET_EVENT');
 
         $result = $this->dbTable->select()
+            ->orderBy([$this->defaultSort], $this->defaultSortOrder)
             ->where('id', $id)
             ->one();
 
@@ -164,7 +262,9 @@ abstract class ObjectBase implements JsonSerializable {
             }
         }
 
-        if($this->getProperty('id')/* && !$this instanceof File*/) {
+        //print_r($dataToSerialize); exit;
+
+        if($this->getProperty('id') && $this->get($this->getProperty('id')) != null) {
             // Update object
             $this->callHooks('BEFORE_SAVE_EXISTING_EVENT');
             $this->dbTable->update($dataToSerialize)
@@ -254,7 +354,7 @@ abstract class ObjectBase implements JsonSerializable {
             }
         } else {
             /** @var Table $table */
-            $table = $this->db->table('permissions');
+            $table = $this->db->table('api_permission');
 
             $groups = [0];
             if(isset($_SESSION['user'])) {
@@ -282,5 +382,18 @@ abstract class ObjectBase implements JsonSerializable {
         }
 
         return false;
+    }
+
+    public function setQueryLimit($limit) {
+        $this->queryLimit = $limit;
+    }
+
+    public function setQueryPage($page) {
+        $rawPage = ((intval($page) - 1) * $this->queryLimit);
+        $this->queryPage = ($rawPage <= 0) ? 0 : $rawPage;
+    }
+
+    public function getQueryLimit() {
+        return $this->queryLimit;
     }
 }

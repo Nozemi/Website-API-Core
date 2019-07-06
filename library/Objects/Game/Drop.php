@@ -4,7 +4,7 @@ use NozCore\ObjectBase;
 
 class Drop extends ObjectBase {
 
-    protected $table = 'npc_drop';
+    protected $table = 'game_npc_drop';
 
     /**
      * Define the table structure in an array with key being column name and value being data type.

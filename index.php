@@ -16,7 +16,9 @@ $config = [
         'http://localhost',
         'https://localhost',
         'http://eldrios.com',
-        'https://eldrios.com'
+        'https://eldrios.com',
+        'http://localhost:4200',
+        'https://wrapper.beta.eldrios.com'
     ],
     'fileRoot' => '::SITEROOT::/files/',
     'authyKey' => false,
@@ -81,7 +83,11 @@ if(is_array(json_decode(file_get_contents('php://input'), true))) {
 }
 
 function connectToDb($host, $name, $user, $pass, $port = 3306) {
-    $GLOBALS['pdo'] = new PDO('mysql:host=' . $host . ':' . $port . ';dbname=' . $name . ';charset=utf8', $user, $pass);
+    try {
+        $GLOBALS['pdo'] = new PDO('mysql:host=' . $host . ':' . $port . ';dbname=' . $name . ';charset=utf8', $user, $pass);
+    } catch(PDOException $ex) {
+        new Error('Your database configuration is incorrect. Please configure your database credentials correctly.');
+    }
 
     $pdoConnection = $GLOBALS['pdo'];
     $GLOBALS['hydra']  = new \ClanCats\Hydrahon\Builder('mysql', function($query, $queryString, $queryParameters) use($pdoConnection) {
@@ -96,7 +102,7 @@ function connectToDb($host, $name, $user, $pass, $port = 3306) {
     });
 }
 
-connectToDb('localhost', 'rsps_dev', 'rsps', $config->database['password']);
+connectToDb($config->database['host'], $config->database['database'], $config->database['username'], $config->database['password']);
 
 $auth = new Authenticator();
 $token = $auth->getBearerToken();
