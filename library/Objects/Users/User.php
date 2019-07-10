@@ -4,7 +4,6 @@ use ClanCats\Hydrahon\Builder;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Token\AccessToken;
 use NozCore\DataTypes;
-use NozCore\MailFactory;
 use NozCore\Message\Error;
 use NozCore\ObjectBase;
 use Wohali\OAuth2\Client\Provider\Discord;
@@ -14,6 +13,7 @@ use Wohali\OAuth2\Client\Provider\Discord;
  *
  * @property int $id
  * @property string $username
+ * @property string $password
  * @property string $email
  * @property int $authyId
  * @property boolean $verified
@@ -28,9 +28,9 @@ class User extends ObjectBase {
 
     protected $hooks = [
         'BEFORE_SAVE_EVENT' => [
-            'hashPassword',
             'validateUsername',
             'validateEmail',
+            'hashPassword',
         ],
         'BEFORE_SAVE_WITHOUT_ID_EVENT' => [
             'generateEmailToken',
@@ -66,6 +66,10 @@ class User extends ObjectBase {
     public function hashPassword() {
         if(!isset($this->id)) {
             if(isset($this->password) && strlen($this->password) > 0) {
+                if(strlen($this->password) < 6) {
+                    new Error('Your password needs to be 6 characters or longer.');
+                }
+
                 $this->password = password_hash($this->password, PASSWORD_BCRYPT);
             } else {
                 new Error('You need to provide a password in order to register.');
@@ -80,6 +84,14 @@ class User extends ObjectBase {
      */
     public function validateUsername() {
         if(isset($this->username)) {
+            if(!preg_match('/^[A-Za-z0-9]*$/', $this->username)) {
+                new Error('You may only use alphanumeric characters in your username. (A-Z, a-z and 0-9)');
+            }
+
+            if(strlen($this->username) > 12 || strlen($this->username) < 3) {
+                new Error('Please provide a username longer than 2 characters, but shorter than 13.');
+            }
+
             if(isset($this->id)) {
                 /** @var User $user */
                 $user = $this->get($this->id);

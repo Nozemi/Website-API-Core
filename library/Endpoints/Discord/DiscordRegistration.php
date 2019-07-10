@@ -21,7 +21,7 @@ class DiscordRegistration extends Endpoint {
 
         if(!isset($_REQUEST['code'])) {
             $authUrl = $provider->getAuthorizationUrl([
-                'scope' => ['email', 'identify', 'guilds.join']
+                'scope' => ['email', 'identify'] // , 'guilds.join'
             ]);
             $_SESSION['oauth2state'] = $provider->getState();
             header("Location: {$authUrl}");
