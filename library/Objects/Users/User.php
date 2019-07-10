@@ -1,13 +1,13 @@
 <?php namespace NozCore\Objects\Users;
 
 use ClanCats\Hydrahon\Builder;
-use Http\Discovery\Exception\DiscoveryFailedException;
-use Mailgun\HttpClientConfigurator;
-use Mailgun\Mailgun;
+use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
+use League\OAuth2\Client\Token\AccessToken;
 use NozCore\DataTypes;
 use NozCore\MailFactory;
 use NozCore\Message\Error;
 use NozCore\ObjectBase;
+use Wohali\OAuth2\Client\Provider\Discord;
 
 /**
  * Class User
@@ -18,6 +18,7 @@ use NozCore\ObjectBase;
  * @property int $authyId
  * @property boolean $verified
  * @property string $emailToken
+ * @property string discordId
  *
  * @package NozCore\Objects\Users
  */
@@ -32,7 +33,8 @@ class User extends ObjectBase {
             'validateEmail',
         ],
         'BEFORE_SAVE_WITHOUT_ID_EVENT' => [
-            'generateEmailToken'
+            'generateEmailToken',
+            'checkDiscordAuthToken'
         ],
         'AFTER_SAVE_NEW_EVENT' => [
             'sendVerificationEmail'
@@ -166,11 +168,32 @@ class User extends ObjectBase {
         return false;
     }
 
+    public function checkDiscordAuthToken() {
+        if(isset($GLOBALS['data']['refreshToken'])) {
+            $provider = new Discord([
+                'clientId'     => $GLOBALS['config']->discord['application']['clientId'],
+                'clientSecret' => $GLOBALS['config']->discord['application']['clientSecret'],
+                'redirectUri'  => $GLOBALS['config']->discord['application']['redirectUri']
+            ]);
+
+            try {
+                /** @var AccessToken $token */
+                $token = $provider->getAccessToken('refresh_token', [
+                    'refresh_token' => $GLOBALS['data']['refreshToken']
+                ]);
+
+                /** @var AccessToken $token */
+                $user = $provider->getResourceOwner($token);
+                $this->discordId = $user->getId();
+            } catch (IdentityProviderException $ignored) {}
+        }
+    }
+
     /**
      * @param User $user
      */
     public function sendVerificationEmail(User $user) {
-        if(strlen($user->email) > 0 && strlen($user->emailToken) > 0) {
+        /*if(strlen($user->email) > 0 && strlen($user->emailToken) > 0) {
             try {
                 $mailFactory = new MailFactory();
                 $mailFactory->setSubject('Eldrios - Please verify your email address')
@@ -185,7 +208,7 @@ class User extends ObjectBase {
             }
         } else {
             new Error('Failed to send verification email.');
-        }
+        }*/
     }
 
     public function generateEmailToken() {

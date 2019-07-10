@@ -1,16 +1,17 @@
 <?php namespace NozCore\Endpoints\Discord;
 
+use Http\Discovery\Exception\DiscoveryFailedException;
+use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Token\AccessToken;
 use NozCore\Endpoint;
+use NozCore\Frontend\UrlManager;
 use NozCore\Message\Error;
+use NozCore\Objects\Users\User;
 use Wohali\OAuth2\Client\Provider\Discord;
 use Wohali\OAuth2\Client\Provider\DiscordResourceOwner;
 
 class DiscordRegistration extends Endpoint {
 
-    /**
-     * @throws \League\OAuth2\Client\Provider\Exception\IdentityProviderException
-     */
     public function get() {
         $provider = new Discord([
             'clientId'     => $GLOBALS['config']->discord['application']['clientId'],
@@ -35,18 +36,41 @@ class DiscordRegistration extends Endpoint {
                     'code' => $_REQUEST['code']
                 ]);
 
-                /** @var DiscordResourceOwner $user */
-                $user = $provider->getResourceOwner($token);
+                /** @var DiscordResourceOwner $discordUser */
+                $discordUser = $provider->getResourceOwner($token);
 
-                $url = "https://site.beta.eldrios.com/sign-up/id/{$user->getId()}/username/{$user->getUsername()}";
+                $username = $discordUser->getUsername();
 
-                if($user->getVerified()) {
-                    $url .= "/email/{$user->getEmail()}";
+                if ($discordUser->getVerified()) {
+                    $email = $discordUser->getEmail();
                 }
-                header("Location: {$url}");
-                exit;
-            } catch(\Exception $ex) {
-                new Error('Failed to get Discord user.');
+
+                if (isset($_SESSION['user']['userId'])) {
+                    $user = new User();
+                    $user = $user->get($_SESSION['user']['userId']);
+                    $user->setProperty('discordId', $discordUser->getId());
+                    $user->save('SERVER');
+                } else {
+                    $urlManager = new UrlManager();
+
+                    if ($urlManager->getRegistrationUrl()) {
+                        $url = $urlManager->getRegistrationUrl() . "/refresh-token/{$token->getRefreshToken()}/username/{$username}";
+                        if (isset($email)) {
+                            $url .= "/email/{$email}";
+                        }
+
+                        header("Location: {$url}");
+                        exit;
+                    } else {
+                        new Error('Registration URL is not configured. If you\'re the owner of this API, you should configure the registration URL for the frontend.');
+                        exit;
+                    }
+                    //$url = $GLOBALS['config']->frontend['baseUrl'] . $;
+                }
+            } catch(IdentityProviderException $e) {
+                new Error('Unable to identify your Discord account. Probably wrong authentication code.');
+            } catch(\Exception $e) {
+                new Error('Something went wrong while authenticating your Discord account.');
             }
         }
     }

@@ -75,9 +75,10 @@ abstract class Endpoint {
             $object = $object->save();
 
             $this->result = $object;
-        } else {
-            new Error('Endpoint not yet handling POST requests.');
+            return;
         }
+
+        new Error('Endpoint not yet handling POST requests.');
     }
 
     public function delete() {

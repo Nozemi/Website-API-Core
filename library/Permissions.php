@@ -3,7 +3,7 @@
 use ClanCats\Hydrahon\Builder;
 use ClanCats\Hydrahon\Query\Sql\Table;
 use NozCore\Objects\Group;
-use NozCore\Objects\User;
+use NozCore\Objects\Users\User;
 
 class Permissions {
 
@@ -33,6 +33,7 @@ class Permissions {
      * @param $key
      * @return bool
      * @throws \ClanCats\Hydrahon\Query\Sql\Exception
+     * @throws \ReflectionException
      */
     public function checkPermissions($key) {
         if(isset($_SESSION['user']['userId'])) {
