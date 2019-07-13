@@ -4,6 +4,7 @@ use ClanCats\Hydrahon\Builder;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Token\AccessToken;
 use NozCore\DataTypes;
+use NozCore\Message\AccessDenied;
 use NozCore\Message\Error;
 use NozCore\ObjectBase;
 use Wohali\OAuth2\Client\Provider\Discord;
@@ -25,6 +26,11 @@ use Wohali\OAuth2\Client\Provider\Discord;
 class User extends ObjectBase {
 
     protected $table = 'api_user';
+    protected $selfContentCheck = 'id';
+    protected $protectedProperties = [
+        'discordId', 'authyId', 'groupId', 'username', 'verified', 'twoFAEnabled'
+    ];
+    protected $hideFromGET = ['password'];
 
     protected $hooks = [
         'BEFORE_SAVE_EVENT' => [
@@ -59,21 +65,42 @@ class User extends ObjectBase {
             'lastVisit'    => DataTypes::TIMESTAMP,
             'discordId'    => DataTypes::STRING,
             'verified'     => DataTypes::BOOLEAN,
-            'emailToken'   => DataTypes::STRING
+            'emailToken'   => DataTypes::STRING,
+            'aboutMe'      => DataTypes::STRING,
+            'discordName'  => DataTypes::STRING
         ];
     }
 
-    public function hashPassword() {
-        if(!isset($this->id)) {
-            if(isset($this->password) && strlen($this->password) > 0) {
-                if(strlen($this->password) < 6) {
-                    new Error('Your password needs to be 6 characters or longer.');
-                }
-
-                $this->password = password_hash($this->password, PASSWORD_BCRYPT);
+    public function save($method = 'POST') {
+        if($_SERVER['REQUEST_METHOD'] == 'PUT') {
+            if(!isset($this->otherData['existingPassword'])) {
+                new AccessDenied('You need to provide the existing password in order to update your account.');
             } else {
-                new Error('You need to provide a password in order to register.');
+                /** @var User $user */
+                $user = $this->get($this->id);
+                if(!password_verify($this->otherData['existingPassword'], $user->password)) {
+                    new AccessDenied('The provided existing password was incorrect.');
+                }
             }
+        }
+
+        return parent::save($method);
+    }
+
+
+    public function hashPassword() {
+        if($_SERVER['REQUEST_METHOD'] == 'PUT' && !isset($this->password)) {
+            return;
+        }
+
+        if(isset($this->password) && strlen($this->password) > 0) {
+            if(strlen($this->password) < 6) {
+                new Error('Your password needs to be 6 characters or longer.');
+            }
+
+            $this->password = password_hash($this->password, PASSWORD_BCRYPT);
+        } else {
+            new Error('You need to provide a password in order to register.');
         }
     }
 
@@ -83,6 +110,10 @@ class User extends ObjectBase {
      * @throws \ReflectionException
      */
     public function validateUsername() {
+        if(!$this->getPermission('username')) {
+            return false;
+        }
+
         if(isset($this->username)) {
             if(!preg_match('/^[A-Za-z0-9]*$/', $this->username)) {
                 new Error('You may only use alphanumeric characters in your username. (A-Z, a-z and 0-9)');
@@ -107,6 +138,8 @@ class User extends ObjectBase {
         } else {
             new Error('Please provide a username in order to register.');
         }
+
+        return false;
     }
 
     /**
@@ -115,6 +148,14 @@ class User extends ObjectBase {
      * @throws \ReflectionException
      */
     public function validateEmail() {
+        if($_SERVER['REQUEST_METHOD'] == 'PUT') {
+            /** @var User $user */
+            $user = $this->get($this->id);
+            if($user->email == $this->email) {
+                return false;
+            }
+        }
+
         if(isset($this->email)) {
             if(isset($this->id)) {
                 /** @var User $user */
@@ -132,8 +173,10 @@ class User extends ObjectBase {
                 new Error('Please provide a valid email address.');
             }
         } else {
-            new Error('Please provide an email address in order to register.');
+            new Error('Please provide an email address.');
         }
+
+        return false;
     }
 
     /**

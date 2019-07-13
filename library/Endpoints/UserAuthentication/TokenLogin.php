@@ -32,12 +32,8 @@ class TokenLogin extends Endpoint {
                 $user = new User();
                 $user = $user->get($id);
 
-                $this->result = [
-                    'id' => $user->getProperty('id'),
-                    'groupId' => $user->getProperty('groupId'),
-                    'username' => $user->getProperty('username'),
-                    'accessToken' => $token
-                ];
+                $this->result = $user->jsonSerialize();
+                $this->result['accessToken'] = $token;
                 return;
             }
         }

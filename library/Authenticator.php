@@ -32,7 +32,7 @@ class Authenticator {
         $base64UrlPayload = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($payload));
 
         // Create Signature Hash
-        $signature = hash_hmac('sha256', $base64UrlHeader . "." . $base64UrlPayload, md5(time()) . 'noz_core.' . $GLOBALS['config']->database->prefix.'jwttoken.key', true);
+        $signature = hash_hmac('sha256', $base64UrlHeader . "." . $base64UrlPayload, md5(time()) . 'noz_core.' . (isset($GLOBALS['config']->database->prefix) ? $GLOBALS['config']->database->prefix : '').'jwttoken.key', true);
 
         // Encode Signature to Base64Url String
         $base64UrlSignature = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($signature));
@@ -91,6 +91,12 @@ class Authenticator {
                 'client'     => ''
             ])->execute();
 
+            $_SESSION['user'] = [
+                'id' => $user->getProperty('id'),
+                'groupId' => $user->getProperty('groupId'),
+                'token' => $token
+            ];
+
             return $token;
         //}
     }
@@ -116,6 +122,8 @@ class Authenticator {
             ];
 
             return $user->getProperty('id');
+        } else {
+            unset($_SESSION['user']);
         }
 
         return false;

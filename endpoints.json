@@ -15,5 +15,7 @@
     "page": "NozCore\\Endpoints\\Site\\Pages",
     "pages": "NozCore\\Endpoints\\Site\\Pages",
     "article": "NozCore\\Endpoints\\Site\\Articles",
-    "articles": "NozCore\\Endpoints\\Site\\Articles"
+    "articles": "NozCore\\Endpoints\\Site\\Articles",
+    "drop": "NozCore\\Endpoints\\Game\\Drops",
+    "drops": "NozCore\\Endpoints\\Game\\Drops"
 }

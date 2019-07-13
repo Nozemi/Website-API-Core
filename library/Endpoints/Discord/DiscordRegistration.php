@@ -1,6 +1,5 @@
 <?php namespace NozCore\Endpoints\Discord;
 
-use Http\Discovery\Exception\DiscoveryFailedException;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Token\AccessToken;
 use NozCore\Endpoint;
@@ -40,17 +39,18 @@ class DiscordRegistration extends Endpoint {
                 $discordUser = $provider->getResourceOwner($token);
 
                 $username = $discordUser->getUsername();
-
                 if ($discordUser->getVerified()) {
                     $email = $discordUser->getEmail();
                 }
 
                 if (isset($_SESSION['user']['userId'])) {
+                    // User is already authenticated, so we just update the existing user with the Discord ID.
                     $user = new User();
                     $user = $user->get($_SESSION['user']['userId']);
                     $user->setProperty('discordId', $discordUser->getId());
                     $user->save('SERVER');
                 } else {
+                    // User is not authenticated, so we pass the username, email and refresh token from the Discord API.
                     $urlManager = new UrlManager();
 
                     if ($urlManager->getRegistrationUrl()) {
@@ -65,7 +65,6 @@ class DiscordRegistration extends Endpoint {
                         new Error('Registration URL is not configured. If you\'re the owner of this API, you should configure the registration URL for the frontend.');
                         exit;
                     }
-                    //$url = $GLOBALS['config']->frontend['baseUrl'] . $;
                 }
             } catch(IdentityProviderException $e) {
                 new Error('Unable to identify your Discord account. Probably wrong authentication code.');

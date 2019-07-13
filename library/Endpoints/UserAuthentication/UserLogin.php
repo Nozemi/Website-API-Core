@@ -47,13 +47,8 @@ class UserLogin extends Endpoint {
                 }
 
                 $this->responseCode = 200;
-                $this->result = [
-                    'id' => $user->getProperty('id'),
-                    'groupId' => $user->getProperty('groupId'),
-                    'username' => $user->getProperty('username'),
-                    'accessToken' => $accessToken,
-                    //'user' => $user
-                ];
+                $this->result = $user->jsonSerialize();
+                $this->result['accessToken'] = $accessToken;
                 return;
             }
         }

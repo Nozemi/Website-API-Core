@@ -15,7 +15,7 @@ abstract class Endpoint {
      * @throws \ReflectionException
      */
     public function get() {
-        new ActivityManager($this);
+        //new ActivityManager($this);
 
         $name = (isset($_REQUEST['name']) ? $_REQUEST['name'] : false);
         $id   = (isset($_REQUEST['id']) ? $_REQUEST['id'] : false);
@@ -24,7 +24,7 @@ abstract class Endpoint {
             /** @var ObjectBase $object */
             $object = new $this->object();
             $object->setQueryLimit(isset($_REQUEST['limit']) ? intval($_REQUEST['limit']) : 25);
-            $object->setQueryPage(isset($_REQUEST['page']) ? ((intval($_REQUEST['page']) - 1) * $object->getQueryLimit()) : 0);
+            $object->setQueryPage(isset($_REQUEST['page']) ? $_REQUEST['page'] : 0);
 
             if($id) {
                 $this->result = $object->get($id);
@@ -41,12 +41,17 @@ abstract class Endpoint {
             $filters = [];
             foreach($object->data() as $filter => $dataType) {
                 if(isset($_REQUEST[$filter])) {
-                    $filters[$filter] = $_REQUEST[$filter];
+                    $filters[$filter] = DataTypes::parseValue($_REQUEST[$filter], $dataType);
                 }
             }
 
             if((empty($filters) || (isset($filters['name']) && count($filters) == 1)) && $name) {
                 $this->result = $object->getByName($name, $this->getByNameColumn);
+                return;
+            }
+
+            if(empty($filters)) {
+                $this->result = $object->getAll();
                 return;
             }
 
@@ -56,7 +61,21 @@ abstract class Endpoint {
         }
     }
 
+    /**
+     * @throws \ClanCats\Hydrahon\Query\Sql\Exception
+     * @throws \ReflectionException
+     */
     public function put() {
+        if($this->object != -1) {
+            /** @var ObjectBase $object */
+            $object = new $this->object($GLOBALS['data']);
+            $object->setProperty('id', $_REQUEST['id']);
+            $object = $object->save('PUT');
+
+            $this->result = $object->get($_REQUEST['id']);
+            return;
+        }
+
         new Error('Endpoint not yet handling PUT requests.');
     }
 
@@ -72,7 +91,7 @@ abstract class Endpoint {
 
             /** @var ObjectBase $object */
             $object = new $this->object($GLOBALS['data']);
-            $object = $object->save();
+            $object = $object->save('POST');
 
             $this->result = $object;
             return;

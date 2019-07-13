@@ -19,6 +19,8 @@ abstract class MessageUtil {
         $type = 200;
         if($this instanceof Error) {
             $type = 503;
+        } else if($this instanceof AccessDenied) {
+            $type = 403;
         }
 
         http_response_code($type);
@@ -32,6 +34,6 @@ abstract class MessageUtil {
         $this->properties = array_merge($this->properties, $this->properties());
 
         echo json_encode($this->properties);
-        exit;
+        die();
     }
 }

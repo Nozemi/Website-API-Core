@@ -4,6 +4,9 @@ use ClanCats\Hydrahon\Builder;
 use ClanCats\Hydrahon\Query\Sql\Select;
 use ClanCats\Hydrahon\Query\Sql\Table;
 use JsonSerializable;
+use NozCore\Message\AccessDenied;
+use NozCore\Objects\Users\Group;
+use NozCore\Objects\Users\User;
 
 abstract class ObjectBase implements JsonSerializable {
 
@@ -28,6 +31,12 @@ abstract class ObjectBase implements JsonSerializable {
 
     protected $betweenColumn = null;
 
+    protected $selfContentCheck = null;
+    protected $protectedProperties = [];
+
+    protected $otherData = [];
+    protected $hideFromGET = [];
+
     /**
      * Define the table structure in an array with key being column name and value being data type.
      *
@@ -37,19 +46,23 @@ abstract class ObjectBase implements JsonSerializable {
 
     /**
      * ObjectBase constructor.
+     *
      * @param array $data
      */
     public function __construct($data = []) {
-        $this->db  = $GLOBALS['hydra'];
+        $this->db = $GLOBALS['hydra'];
         $this->pdo = $GLOBALS['pdo'];
 
         $this->dbTable = $this->db->table($this->table);
 
-        foreach($this->data() as $property => $type) {
-            if(isset($data[$property])) {
+        foreach ($this->data() as $property => $type) {
+            if (isset($data[$property])) {
                 $this->$property = DataTypes::parseValue($data[$property], $type);
+                unset($data[$property]);
             }
         }
+
+        $this->otherData = $data;
     }
 
     /**
@@ -57,14 +70,15 @@ abstract class ObjectBase implements JsonSerializable {
      *
      * @return array
      * @throws \ClanCats\Hydrahon\Query\Sql\Exception
+     * @throws \ReflectionException
      */
     public function jsonSerialize() {
         $this->permissions();
 
         $dataToSerialize = [];
-        foreach($this->data() as $property => $type) {
-            if($this->getPermission($property)) {
-                if (isset($this->$property)) {
+        foreach ($this->data() as $property => $type) {
+            if ($this->getPermission($property)) {
+                if (isset($this->$property) && !in_array($property, $this->hideFromGET)) {
                     $dataToSerialize[$property] = $this->$property;
                 }
             }
@@ -76,22 +90,20 @@ abstract class ObjectBase implements JsonSerializable {
     /**
      * Get all entries from the selected database
      *
-     * @param int $limit
-     * @param int $offset
      * @return array
      * @throws \ReflectionException
      */
-    public function getAll($limit = 0, $offset = 0) {
+    public function getAll() {
         $objects = [];
 
         /** @var Table $table */
         $query = $this->dbTable->select()
             ->orderBy([$this->defaultSort], $this->defaultSortOrder)
-            ->limit($limit)
-            ->offset($offset)
+            ->limit($this->queryLimit)
+            ->offset($this->queryPage)
             ->execute();
 
-        foreach($query as $row) {
+        foreach ($query as $row) {
             $object = new $this($row);
             $this->callHooks('SUCCESSFUL_GET_EVENT', $object);
             $objects[] = $object;
@@ -101,8 +113,9 @@ abstract class ObjectBase implements JsonSerializable {
     }
 
     /**
-     * @param $name
+     * @param        $name
      * @param string $column
+     *
      * @return array
      * @throws \ClanCats\Hydrahon\Query\Sql\Exception
      * @throws \ReflectionException
@@ -120,12 +133,12 @@ abstract class ObjectBase implements JsonSerializable {
 
         $query = $this->dbTable->select()
             ->orderBy([$this->defaultSort], $this->defaultSortOrder)
-            ->where($column, 'LIKE', '%'.$name.'%')
+            ->where($column, 'LIKE', '%' . $name . '%')
             ->limit($this->queryLimit)
             ->page($this->queryPage)
             ->execute();
 
-        foreach($query as $row) {
+        foreach ($query as $row) {
             $object = new $this($row);
             $this->callHooks('SUCCESSFUL_GET_EVENT', $object);
             $this->callHooks('SUCCESSFUL_GET_BY_NAME_EVENT', $object);
@@ -137,6 +150,7 @@ abstract class ObjectBase implements JsonSerializable {
 
     /**
      * @param array $filters
+     *
      * @return array
      * @throws \ReflectionException
      * @throws \ClanCats\Hydrahon\Query\Sql\Exception
@@ -150,16 +164,17 @@ abstract class ObjectBase implements JsonSerializable {
         $query = $this->dbTable->select()
             ->orderBy([$this->defaultSort], $this->defaultSortOrder);
 
-        foreach($filters as $filter => $value) {
-            $query->where($filter, 'like', '%'.$value.'%');
+        foreach ($filters as $filter => $value) {
+            $query->where($filter, 'like', '%' . $value . '%');
         }
 
         $query = $query
+            ->orderBy([$this->defaultSort], $this->defaultSortOrder)
             ->limit($this->queryLimit)
             ->page($this->queryPage)
             ->execute();
 
-        foreach($query as $row) {
+        foreach ($query as $row) {
             $object = new $this($row);
             $this->callHooks('SUCCESSFUL_GET_EVENT', $object);
             $this->callHooks('SUCCESSFUL_GET_BY_FILTERS_EVENT', $object);
@@ -172,6 +187,7 @@ abstract class ObjectBase implements JsonSerializable {
     /**
      * @param $since
      * @param $until
+     *
      * @return array
      * @throws \ClanCats\Hydrahon\Query\Sql\Exception
      * @throws \ReflectionException
@@ -188,7 +204,7 @@ abstract class ObjectBase implements JsonSerializable {
         $query = $this->dbTable->select()
             ->orderBy([$this->defaultSort], $this->defaultSortOrder);
 
-        if($this->betweenColumn != null) {
+        if ($this->betweenColumn != null) {
             $column = $this->betweenColumn;
             $query->where(function ($q) use ($since, $until, $column) {
                 /** @var Select $q */
@@ -217,6 +233,7 @@ abstract class ObjectBase implements JsonSerializable {
 
     /**
      * @param $id
+     *
      * @return ObjectBase
      * @throws \ClanCats\Hydrahon\Query\Sql\Exception
      * @throws \ReflectionException
@@ -229,7 +246,7 @@ abstract class ObjectBase implements JsonSerializable {
             ->where('id', $id)
             ->one();
 
-        if(!empty($result)) {
+        if (!empty($result)) {
             $object = new $this($result);
             $this->callHooks('SUCCESSFUL_GET_EVENT', $object);
             return $object;
@@ -240,6 +257,7 @@ abstract class ObjectBase implements JsonSerializable {
 
     /**
      * @param string $method
+     *
      * @return ObjectBase
      * @throws \ClanCats\Hydrahon\Query\Sql\Exception
      * @throws \ReflectionException
@@ -247,24 +265,27 @@ abstract class ObjectBase implements JsonSerializable {
     public function save($method = 'POST') {
         $this->callHooks('BEFORE_SAVE_EVENT');
 
-        if($this->getProperty('id')) {
+        if ($this->getProperty('id')) {
             $this->callHooks('BEFORE_SAVE_WITH_ID_EVENT');
         } else {
             $this->callHooks('BEFORE_SAVE_WITHOUT_ID_EVENT');
         }
 
-        $this->permissions($method);
+        $this->permissions($method, true);
 
         $dataToSerialize = [];
-        foreach($this->data() as $property => $type) {
-            if(isset($this->$property) && $this->getPermission($property)) {
+        foreach ($this->data() as $property => $type) {
+            if (isset($this->$property) && $this->getPermission($property, true)) {
                 $dataToSerialize[$property] = $this->$property;
             }
         }
 
-        //print_r($dataToSerialize); exit;
+        if ($this->getProperty('id') && $this->get($this->getProperty('id')) != null) {
+            $selfContentCheck = $this->selfContentCheck;
+            if (!isset($_SESSION['user']['id']) || $this->$selfContentCheck != $_SESSION['user']['id']) {
+                new AccessDenied('You don\'t have permission to update this object.');
+            }
 
-        if($this->getProperty('id') && $this->get($this->getProperty('id')) != null) {
             // Update object
             $this->callHooks('BEFORE_SAVE_EXISTING_EVENT');
             $this->dbTable->update($dataToSerialize)
@@ -286,6 +307,7 @@ abstract class ObjectBase implements JsonSerializable {
 
     /**
      * @param $id
+     *
      * @throws \ClanCats\Hydrahon\Query\Sql\Exception
      */
     public function delete($id) {
@@ -296,10 +318,11 @@ abstract class ObjectBase implements JsonSerializable {
      * Get a property from the object.
      *
      * @param $property
+     *
      * @return bool|mixed|null
      */
     public function getProperty($property) {
-        if(array_key_exists($property, $this->data()) && isset($this->$property)) {
+        if (array_key_exists($property, $this->data()) && isset($this->$property)) {
             return DataTypes::parseValue($this->$property, $this->data()[$property]);
         }
 
@@ -312,10 +335,11 @@ abstract class ObjectBase implements JsonSerializable {
      *
      * @param $property
      * @param $value
+     *
      * @return bool
      */
     public function setProperty($property, $value) {
-        if(array_key_exists($property, $this->data())) {
+        if (array_key_exists($property, $this->data())) {
             $this->$property = DataTypes::parseValue($value, $this->data()[$property]);
             return $this->$property;
         }
@@ -324,16 +348,17 @@ abstract class ObjectBase implements JsonSerializable {
     }
 
     /**
-     * @param $hook
+     * @param      $hook
      * @param null $object
+     *
      * @throws \ReflectionException
      */
     public function callHooks($hook, $object = null) {
-        if(isset($this->hooks[$hook])) {
-            foreach($this->hooks[$hook] as $methodName) {
-                if(method_exists($this, $methodName)) {
+        if (isset($this->hooks[$hook])) {
+            foreach ($this->hooks[$hook] as $methodName) {
+                if (method_exists($this, $methodName)) {
                     $method = new \ReflectionMethod($this, $methodName);
-                    if($method->getNumberOfRequiredParameters() == 1) {
+                    if ($method->getNumberOfRequiredParameters() == 1) {
                         $this->$methodName($object);
                     } else {
                         $this->$methodName();
@@ -345,11 +370,17 @@ abstract class ObjectBase implements JsonSerializable {
 
     /**
      * @param string $method
+     * @param bool   $checkProtected
+     *
      * @throws \ClanCats\Hydrahon\Query\Sql\Exception
      */
-    public function permissions($method = 'GET') {
-        if($method == 'SERVER') {
-            foreach($this->data() as $property => $type) {
+    public function permissions($method = 'GET', $checkProtected = false) {
+        foreach ($this->data() as $property => $type) {
+            $this->permissions[$property] = false;
+        }
+
+        if ($method == 'SERVER') {
+            foreach ($this->data() as $property => $type) {
                 $this->permissions[$property] = true;
             }
         } else {
@@ -357,7 +388,7 @@ abstract class ObjectBase implements JsonSerializable {
             $table = $this->db->table('api_permission');
 
             $groups = [0];
-            if(isset($_SESSION['user'])) {
+            if (isset($_SESSION['user'])) {
                 $groupId = $_SESSION['user']['groupId'];
                 $groups[] = $groupId;
 
@@ -370,14 +401,51 @@ abstract class ObjectBase implements JsonSerializable {
                 ->andWhere('method', $method)
                 ->execute();
 
-            foreach($result as $item) {
+            foreach ($result as $item) {
                 $this->permissions[$item['key']] = boolval($item['value']);
+            }
+
+            if($checkProtected) {
+                foreach ($this->protectedProperties as $protected) {
+                    $this->permissions[$protected] = false;
+                }
             }
         }
     }
 
-    public function getPermission($key) {
-        if(isset($this->permissions[$key])) {
+    /**
+     * @param      $key
+     * @param bool $checkProtected
+     *
+     * @return bool|mixed
+     * @throws \ClanCats\Hydrahon\Query\Sql\Exception
+     * @throws \ReflectionException
+     */
+    public function getPermission($key, $checkProtected = false) {
+        if (isset($_SESSION['user']['id'])) {
+            $user = new User();
+            $user = $user->get($_SESSION['user']['id']);
+
+            $group = new Group();
+            $group = $group->get($user->getProperty('groupId'));
+
+            if ($group->getProperty('admin')) {
+                return true;
+            }
+        }
+
+        if ($this->selfContentCheck != null && isset($_SESSION['user'])) {
+            if ($checkProtected && in_array($key, $this->protectedProperties)) {
+                return false;
+            } else {
+                $property = $this->selfContentCheck;
+                if ($this->$property == $_SESSION['user']['id']) {
+                    return true;
+                }
+            }
+        }
+
+        if (isset($this->permissions[$key])) {
             return $this->permissions[$key];
         }
 

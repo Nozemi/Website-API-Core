@@ -14,11 +14,12 @@ class Group extends ObjectBase {
      */
     public function data() {
         return [
-            'id' => DataTypes::INTEGER,
-            'name' => DataTypes::STRING,
+            'id'          => DataTypes::INTEGER,
+            'name'        => DataTypes::STRING,
             'description' => DataTypes::STRING,
-            'inherit' => DataTypes::JSON,
-            'roleId'  => DataTypes::STRING
+            'inherit'     => DataTypes::JSON,
+            'roleId'      => DataTypes::STRING,
+            'admin'       => DataTypes::BOOLEAN,
         ];
     }
 }

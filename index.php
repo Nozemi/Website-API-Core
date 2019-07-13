@@ -104,9 +104,19 @@ function connectToDb($host, $name, $user, $pass, $port = 3306) {
 
 connectToDb($config->database['host'], $config->database['database'], $config->database['username'], $config->database['password']);
 
-$auth = new Authenticator();
-$token = $auth->getBearerToken();
-$auth->authenticateToken($token);
+try {
+    $auth = new Authenticator();
+    $token = $auth->getBearerToken();
+    if (!$auth->authenticateToken($token) && isset($_SESSION['user']['token'])) {
+        $auth->authenticateToken($_SESSION['user']['token']);
+    }
+} catch (\ClanCats\Hydrahon\Query\Sql\Exception $e) {
+    new Error('Something went wrong with the authentication query.');
+    die();
+} catch (ReflectionException $e) {
+    new Error('Something went wrong while authenticating.');
+    die();
+}
 
 // We need to map each endpoint in here so we know which class to use.
 $endpointMap = json_decode(file_get_contents(__DIR__ . '/endpoints.json'), true);

@@ -57,7 +57,13 @@ class DataTypes {
     }
 
     public static function parseBoolean($value) {
-        $value = boolval($value);
+        if($value == 'true') {
+            $value = true;
+        } else if($value == 'false') {
+            $value = false;
+        } else {
+            $value = boolval($value);
+        }
 
         return $value;
     }
