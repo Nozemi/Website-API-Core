@@ -12,10 +12,12 @@
     "npcs": "NozCore\\Endpoints\\Game\\NPCs",
     "active-user": "NozCore\\Endpoints\\ActiveUsers",
     "active-users": "NozCore\\Endpoints\\ActiveUsers",
-    "page": "NozCore\\Endpoints\\Site\\Pages",
-    "pages": "NozCore\\Endpoints\\Site\\Pages",
-    "article": "NozCore\\Endpoints\\Site\\Articles",
-    "articles": "NozCore\\Endpoints\\Site\\Articles",
+    "page": "NozCore\\Endpoints\\Site\\DataTypes\\Pages",
+    "pages": "NozCore\\Endpoints\\Site\\DataTypes\\Pages",
+    "article": "NozCore\\Endpoints\\Site\\DataTypes\\Articles",
+    "articles": "NozCore\\Endpoints\\Site\\DataTypes\\Articles",
     "drop": "NozCore\\Endpoints\\Game\\Drops",
-    "drops": "NozCore\\Endpoints\\Game\\Drops"
+    "drops": "NozCore\\Endpoints\\Game\\Drops",
+    "template": "NozCore\\Endpoints\\Site\\Templates",
+    "templates": "NozCore\\Endpoints\\Site\\Templates"
 }

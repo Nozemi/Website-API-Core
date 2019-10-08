@@ -1,4 +1,4 @@
-<?php namespace NozCore\Objects\Site;
+<?php namespace NozCore\Objects\Site\DataTypes;
 
 use NozCore\DataTypes;
 use NozCore\ObjectBase;

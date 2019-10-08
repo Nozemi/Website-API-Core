@@ -1,4 +1,4 @@
-<?php namespace NozCore\Objects\Site;
+<?php namespace NozCore\Objects\Site\DataTypes;
 
 use NozCore\DataTypes;
 use NozCore\ObjectBase;
@@ -17,7 +17,9 @@ class Page extends ObjectBase {
         return [
             'id'            => DataTypes::INTEGER,
             'name'          => DataTypes::STRING,
-            'identifier'    => DataTypes::STRING
+            'identifier'    => DataTypes::STRING,
+            'template'      => DataTypes::STRING,
+            'elements'      => DataTypes::JSON
         ];
     }
 }
