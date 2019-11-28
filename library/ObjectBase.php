@@ -134,8 +134,8 @@ abstract class ObjectBase implements JsonSerializable {
         $query = $this->dbTable->select()
             ->orderBy([$this->defaultSort], $this->defaultSortOrder)
             ->where($column, 'LIKE', '%' . $name . '%')
-            ->limit($this->queryLimit)
-            ->page($this->queryPage)
+            ->limit($this->getQueryLimit())
+            ->offset($this->queryPage)
             ->execute();
 
         foreach ($query as $row) {

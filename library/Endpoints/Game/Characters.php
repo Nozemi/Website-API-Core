@@ -3,5 +3,5 @@
 use NozCore\Endpoint;
 
 class Characters extends Endpoint {
-
+    
 }
